@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cliente API - Teste</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .response {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 10px;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border-color: #f5c6cb;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border-color: #c3e6cb;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Teste da API de Clientes</h1>
+    
+    <div class="container">
+        <h3>📋 Listar Todos os Clientes</h3>
+        <button onclick="getAllCustomers()">Buscar Clientes</button>
+        <div id="allCustomers" class="response"></div>
+    </div>
+
+    <div class="container">
+        <h3>🔍 Buscar Cliente por ID</h3>
+        <input type="text" id="customerId" placeholder="ID do cliente">
+        <button onclick="getCustomerById()">Buscar</button>
+        <div id="customerById" class="response"></div>
+    </div>
+
+    <div class="container">
+        <h3>🔎 Buscar Clientes por Termo</h3>
+        <input type="text" id="searchTerm" placeholder="Nome, email ou telefone">
+        <button onclick="searchCustomers()">Buscar</button>
+        <div id="searchResults" class="response"></div>
+    </div>
+
+    <div class="container">
+        <h3>➕ Criar Novo Cliente</h3>
+        <input type="text" id="newName" placeholder="Nome">
+        <input type="email" id="newEmail" placeholder="Email">
+        <input type="text" id="newPhone" placeholder="Telefone">
+        <input type="text" id="newStreet" placeholder="Rua">
+        <input type="text" id="newCity" placeholder="Cidade">
+        <input type="text" id="newState" placeholder="Estado">
+        <input type="text" id="newZipCode" placeholder="CEP">
+        <input type="text" id="newCountry" placeholder="País" value="Brasil">
+        <button onclick="createCustomer()">Criar Cliente</button>
+        <div id="createResult" class="response"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:3000/api/customers';
+
+        async function makeRequest(url, options = {}) {
+            try {
+                const response = await fetch(url, {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...options.headers
+                    },
+                    ...options
+                });
+                return await response.json();
+            } catch (error) {
+                return { success: false, error: error.message };
+            }
+        }
+
+        function displayResponse(elementId, data, isError = false) {
+            const element = document.getElementById(elementId);
+            element.textContent = JSON.stringify(data, null, 2);
+            element.className = `response ${isError ? 'error' : 'success'}`;
+        }
+
+        async function getAllCustomers() {
+            const result = await makeRequest(API_BASE);
+            displayResponse('allCustomers', result, !result.success);
+        }
+
+        async function getCustomerById() {
+            const id = document.getElementById('customerId').value;
+            if (!id) {
+                displayResponse('customerById', { error: 'ID é obrigatório' }, true);
+                return;
+            }
+            const result = await makeRequest(`${API_BASE}/${id}`);
+            displayResponse('customerById', result, !result.success);
+        }
+
+        async function searchCustomers() {
+            const term = document.getElementById('searchTerm').value;
+            if (!term) {
+                displayResponse('searchResults', { error: 'Termo de busca é obrigatório' }, true);
+                return;
+            }
+            const result = await makeRequest(`${API_BASE}/search?q=${encodeURIComponent(term)}`);
+            displayResponse('searchResults', result, !result.success);
+        }
+
+        async function createCustomer() {
+            const customerData = {
+                name: document.getElementById('newName').value,
+                email: document.getElementById('newEmail').value,
+                phone: document.getElementById('newPhone').value,
+                address: {
+                    street: document.getElementById('newStreet').value,
+                    city: document.getElementById('newCity').value,
+                    state: document.getElementById('newState').value,
+                    zipCode: document.getElementById('newZipCode').value,
+                    country: document.getElementById('newCountry').value
+                }
+            };
+
+            if (!customerData.name || !customerData.email || !customerData.phone) {
+                displayResponse('createResult', { error: 'Nome, email e telefone são obrigatórios' }, true);
+                return;
+            }
+
+            const result = await makeRequest(API_BASE, {
+                method: 'POST',
+                body: JSON.stringify(customerData)
+            });
+            
+            displayResponse('createResult', result, !result.success);
+            
+            if (result.success) {
+                // Limpar formulário
+                ['newName', 'newEmail', 'newPhone', 'newStreet', 'newCity', 'newState', 'newZipCode'].forEach(id => {
+                    document.getElementById(id).value = '';
+                });
+            }
+        }
+
+        // Carregar clientes ao abrir a página
+        window.onload = function() {
+            getAllCustomers();
+        };
+    </script>
+</body>
+</html>
