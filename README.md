@@ -1,16 +1,19 @@
-# API de Clientes - TypeScript
+# API de Clientes com Autenticação JWT - TypeScript
 
-Uma API REST simples para gerenciar dados de clientes usando TypeScript, Express.js e arquivo JSON como mock de banco de dados.
+Uma API REST com autenticação JWT para gerenciar dados de clientes usando TypeScript, Express.js e arquivo JSON como mock de banco de dados.
 
 ## 🚀 Funcionalidades
 
-- ✅ Criar cliente
-- ✅ Buscar todos os clientes
-- ✅ Buscar cliente por ID
-- ✅ Atualizar cliente
-- ✅ Deletar cliente
-- ✅ Buscar clientes por termo (nome, email ou telefone)
+- ✅ **Autenticação JWT** completa (login, registro, verificação)
+- ✅ **Autorização baseada em roles** (admin/user)
+- ✅ Criar cliente (requer autenticação)
+- ✅ Buscar todos os clientes (dados básicos públicos, completos com auth)
+- ✅ Buscar cliente por ID (requer autenticação)
+- ✅ Atualizar cliente (requer autenticação)
+- ✅ Deletar cliente (apenas admin)
+- ✅ Buscar clientes por termo (requer autenticação)
 - ✅ Health check
+- ✅ **Tokens de teste expostos** para facilitar desenvolvimento
 
 ## 📋 Pré-requisitos
 
@@ -43,34 +46,79 @@ A API estará disponível em: `http://localhost:3000`
 
 ## 📖 Endpoints da API
 
-### 1. Health Check
+### 🔐 Autenticação
+
+### 1. Login
+```
+POST /api/auth/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "123456"
+}
+```
+
+### 2. Registro
+```
+POST /api/auth/register
+Content-Type: application/json
+
+{
+  "username": "novoUsuario",
+  "email": "novo@email.com",
+  "password": "senhaSegura",
+  "role": "user"
+}
+```
+
+### 3. Dados do usuário autenticado
+```
+GET /api/auth/me
+Authorization: Bearer <token>
+```
+
+### 4. 🧪 Tokens de teste (apenas desenvolvimento)
+```
+GET /api/auth/test-tokens
+```
+
+### 📋 Clientes
+
+### 5. Health Check
 ```
 GET /health
 ```
 
-### 2. Documentação
+### 6. Documentação
 ```
 GET /
 ```
 
-### 3. Listar todos os clientes
+### 7. Listar todos os clientes
 ```
 GET /api/customers
+# Sem autenticação: dados básicos (nome, cidade, estado)
+# Com autenticação: dados completos
+Authorization: Bearer <token> (opcional)
 ```
 
-### 4. Buscar cliente por ID
+### 8. Buscar cliente por ID
 ```
 GET /api/customers/:id
+Authorization: Bearer <token> (obrigatório)
 ```
 
-### 5. Buscar clientes por termo
+### 9. Buscar clientes por termo
 ```
 GET /api/customers/search?q=termo
+Authorization: Bearer <token> (obrigatório)
 ```
 
-### 6. Criar novo cliente
+### 10. Criar novo cliente
 ```
 POST /api/customers
+Authorization: Bearer <token> (obrigatório)
 Content-Type: application/json
 
 {
@@ -87,9 +135,10 @@ Content-Type: application/json
 }
 ```
 
-### 7. Atualizar cliente
+### 11. Atualizar cliente
 ```
 PUT /api/customers/:id
+Authorization: Bearer <token> (obrigatório)
 Content-Type: application/json
 
 {
@@ -98,17 +147,74 @@ Content-Type: application/json
 }
 ```
 
-### 8. Deletar cliente
+### 12. Deletar cliente
 ```
 DELETE /api/customers/:id
+Authorization: Bearer <token> (apenas admin)
+```
+
+## � Autenticação e Autorização
+
+### Usuários de Teste
+A API vem com usuários pré-configurados para facilitar os testes:
+
+| Username | Password | Role  | Permissões |
+|----------|----------|-------|------------|
+| `admin`  | `123456` | admin | Todas as operações |
+| `usuario`| `123456` | user  | CRUD exceto deletar |
+| `demo`   | `123456` | user  | CRUD exceto deletar |
+
+### JWT Token
+- **Validade**: 24 horas
+- **Header**: `Authorization: Bearer <token>`
+- **Secret exposto**: `meu-super-secret-jwt-key-para-testes-123456789` ⚠️ **Apenas para testes!**
+
+### Níveis de Acesso
+- **Público**: `GET /api/customers` (dados básicos)
+- **Autenticado**: Todas as operações CRUD
+- **Admin apenas**: `DELETE /api/customers/:id`
+
+## 🧪 Tokens de Teste Prontos
+
+Para facilitar os testes, você pode obter tokens válidos em:
+```bash
+curl http://localhost:3000/api/auth/test-tokens
+```
+
+Ou usar diretamente nos headers:
+```bash
+# Token de Admin
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+# Token de User  
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
 
 ## 📝 Exemplos de uso com curl
 
-### Criar um cliente
+### Login e obtenção de token
 ```bash
+curl -X POST http://localhost:3000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "admin",
+    "password": "123456"
+  }'
+```
+
+### Obter tokens de teste
+```bash
+curl http://localhost:3000/api/auth/test-tokens
+```
+
+### Criar um cliente (com autenticação)
+```bash
+# Primeiro, faça login e copie o token
+TOKEN="SEU_TOKEN_AQUI"
+
 curl -X POST http://localhost:3000/api/customers \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
   -d '{
     "name": "Ana Costa",
     "email": "ana.costa@email.com",
@@ -123,50 +229,41 @@ curl -X POST http://localhost:3000/api/customers \
   }'
 ```
 
-### Buscar todos os clientes
+### Buscar todos os clientes (sem autenticação - dados básicos)
 ```bash
 curl http://localhost:3000/api/customers
 ```
 
-### Buscar cliente por ID
+### Buscar todos os clientes (com autenticação - dados completos)
 ```bash
-curl http://localhost:3000/api/customers/1a2b3c4d-5e6f-7g8h-9i0j-1k2l3m4n5o6p
-```
-
-### Buscar clientes por termo
-```bash
-curl "http://localhost:3000/api/customers/search?q=João"
-```
-
-### Atualizar cliente
-```bash
-curl -X PUT http://localhost:3000/api/customers/1a2b3c4d-5e6f-7g8h-9i0j-1k2l3m4n5o6p \
-  -H "Content-Type: application/json" \
-  -d '{
-    "phone": "+55 11 55555-9999"
-  }'
-```
-
-### Deletar cliente
-```bash
-curl -X DELETE http://localhost:3000/api/customers/1a2b3c4d-5e6f-7g8h-9i0j-1k2l3m4n5o6p
+curl http://localhost:3000/api/customers \
+  -H "Authorization: Bearer $TOKEN"
 ```
 
 ## 🗂️ Estrutura do Projeto
 
 ```
 src/
-├── controllers/          # Controladores da API
+├── config/                  # Configurações
+│   └── config.ts           # JWT secret e configs (⚠️ expostos para teste)
+├── controllers/            # Controladores da API
+│   ├── authController.ts   # Autenticação
 │   └── customerController.ts
-├── data/                # Dados mock (arquivo JSON)
-│   └── customers.json
-├── routes/              # Definição das rotas
-│   └── customerRoutes.ts
-├── services/            # Lógica de negócio
+├── data/                   # Dados mock (arquivos JSON)
+│   ├── customers.json      # Dados dos clientes
+│   └── users.json         # Dados dos usuários
+├── middleware/             # Middlewares
+│   └── auth.ts            # Autenticação e autorização JWT
+├── routes/                 # Definição das rotas
+│   ├── authRoutes.ts      # Rotas de autenticação
+│   └── customerRoutes.ts  # Rotas de clientes
+├── services/               # Lógica de negócio
+│   ├── authService.ts     # Serviço de autenticação
 │   └── customerDataService.ts
-├── types/               # Tipos e interfaces TypeScript
-│   └── customer.ts
-└── server.ts            # Servidor principal
+├── types/                  # Tipos e interfaces TypeScript
+│   ├── auth.ts            # Tipos de autenticação
+│   └── customer.ts        # Tipos de cliente
+└── server.ts              # Servidor principal
 ```
 
 ## 🧪 Formato dos Dados
@@ -212,6 +309,8 @@ interface ApiResponse<T> {
 - **TypeScript** - Linguagem principal
 - **Express.js** - Framework web
 - **Node.js** - Runtime
+- **jsonwebtoken** - Geração e verificação de JWT
+- **bcryptjs** - Hash de senhas
 - **UUID** - Geração de IDs únicos
 - **CORS** - Política de CORS
 - **ts-node-dev** - Desenvolvimento com hot reload

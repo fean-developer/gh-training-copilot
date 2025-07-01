@@ -12,10 +12,28 @@ export class CustomerController {
   getAllCustomers = (req: Request, res: Response) => {
     try {
       const customers = this.customerService.getAllCustomers();
+      
+      // Se o usuário não estiver autenticado, retorna apenas dados básicos
+      if (!req.user) {
+        const basicCustomers = customers.map(customer => ({
+          id: customer.id,
+          name: customer.name,
+          city: customer.address.city,
+          state: customer.address.state
+        }));
+        
+        const response: ApiResponse<typeof basicCustomers> = {
+          success: true,
+          data: basicCustomers,
+          message: `${basicCustomers.length} clientes encontrados (dados básicos - faça login para mais detalhes)`
+        };
+        return res.json(response);
+      }
+      
       const response: ApiResponse<typeof customers> = {
         success: true,
         data: customers,
-        message: `${customers.length} clientes encontrados`
+        message: `${customers.length} clientes encontrados (usuário: ${req.user.username})`
       };
       res.json(response);
     } catch (error) {
@@ -43,7 +61,7 @@ export class CustomerController {
       const response: ApiResponse<typeof customer> = {
         success: true,
         data: customer,
-        message: 'Cliente encontrado com sucesso'
+        message: `Cliente encontrado com sucesso (usuário: ${req.user?.username})`
       };
       res.json(response);
     } catch (error) {
@@ -72,7 +90,7 @@ export class CustomerController {
       const response: ApiResponse<typeof newCustomer> = {
         success: true,
         data: newCustomer,
-        message: 'Cliente criado com sucesso'
+        message: `Cliente criado com sucesso por ${req.user?.username}`
       };
       res.status(201).json(response);
     } catch (error) {

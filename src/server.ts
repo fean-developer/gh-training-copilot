@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import customerRoutes from './routes/customerRoutes';
+import authRoutes from './routes/authRoutes';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -17,6 +18,7 @@ app.use((req, res, next) => {
 });
 
 // Rotas
+app.use('/api/auth', authRoutes);
 app.use('/api/customers', customerRoutes);
 
 // Rota de health check
@@ -31,16 +33,29 @@ app.get('/health', (req, res) => {
 // Rota padrão
 app.get('/', (req, res) => {
   res.json({
-    message: 'API de Clientes',
+    message: 'API de Clientes com Autenticação JWT',
     version: '1.0.0',
     endpoints: {
       'GET /health': 'Health check',
-      'GET /api/customers': 'Listar todos os clientes',
-      'GET /api/customers/:id': 'Buscar cliente por ID',
-      'GET /api/customers/search?q=termo': 'Buscar clientes por termo',
-      'POST /api/customers': 'Criar novo cliente',
-      'PUT /api/customers/:id': 'Atualizar cliente',
-      'DELETE /api/customers/:id': 'Deletar cliente'
+      'POST /api/auth/login': 'Fazer login',
+      'POST /api/auth/register': 'Registrar usuário',
+      'GET /api/auth/me': 'Dados do usuário autenticado',
+      'GET /api/auth/test-tokens': 'Gerar tokens de teste',
+      'GET /api/customers': 'Listar clientes (dados básicos sem auth)',
+      'GET /api/customers/:id': 'Buscar cliente por ID (requer auth)',
+      'GET /api/customers/search?q=termo': 'Buscar clientes (requer auth)',
+      'POST /api/customers': 'Criar cliente (requer auth)',
+      'PUT /api/customers/:id': 'Atualizar cliente (requer auth)',
+      'DELETE /api/customers/:id': 'Deletar cliente (requer admin)'
+    },
+    authentication: {
+      type: 'Bearer JWT',
+      header: 'Authorization: Bearer <token>',
+      testUsers: {
+        admin: 'username: admin, password: 123456',
+        user: 'username: usuario, password: 123456',
+        demo: 'username: demo, password: 123456'
+      }
     }
   });
 });

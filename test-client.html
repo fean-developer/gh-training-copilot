@@ -61,7 +61,17 @@
     </style>
 </head>
 <body>
-    <h1>🧪 Teste da API de Clientes</h1>
+    <h1>🧪 Teste da API de Clientes com Autenticação JWT</h1>
+    
+    <div class="container">
+        <h3>🔐 Autenticação</h3>
+        <input type="text" id="loginUsername" placeholder="Username" value="admin">
+        <input type="password" id="loginPassword" placeholder="Password" value="123456">
+        <button onclick="login()">Login</button>
+        <button onclick="logout()">Logout</button>
+        <div id="authStatus" class="response"></div>
+        <div id="tokenDisplay" class="response" style="font-size: 12px;"></div>
+    </div>
     
     <div class="container">
         <h3>📋 Listar Todos os Clientes</h3>
@@ -99,14 +109,38 @@
 
     <script>
         const API_BASE = 'http://localhost:3000/api/customers';
+        const AUTH_BASE = 'http://localhost:3000/api/auth';
+        let authToken = localStorage.getItem('authToken');
+
+        // Atualizar status de autenticação
+        function updateAuthStatus() {
+            const statusDiv = document.getElementById('authStatus');
+            const tokenDiv = document.getElementById('tokenDisplay');
+            
+            if (authToken) {
+                statusDiv.textContent = '✅ Autenticado';
+                statusDiv.className = 'response success';
+                tokenDiv.textContent = `Token: ${authToken}`;
+            } else {
+                statusDiv.textContent = '❌ Não autenticado (dados básicos apenas)';
+                statusDiv.className = 'response error';
+                tokenDiv.textContent = '';
+            }
+        }
 
         async function makeRequest(url, options = {}) {
             try {
+                const headers = {
+                    'Content-Type': 'application/json',
+                    ...options.headers
+                };
+                
+                if (authToken) {
+                    headers['Authorization'] = `Bearer ${authToken}`;
+                }
+                
                 const response = await fetch(url, {
-                    headers: {
-                        'Content-Type': 'application/json',
-                        ...options.headers
-                    },
+                    headers,
                     ...options
                 });
                 return await response.json();
@@ -119,6 +153,37 @@
             const element = document.getElementById(elementId);
             element.textContent = JSON.stringify(data, null, 2);
             element.className = `response ${isError ? 'error' : 'success'}`;
+        }
+
+        async function login() {
+            const username = document.getElementById('loginUsername').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            if (!username || !password) {
+                displayResponse('authStatus', { error: 'Username e password são obrigatórios' }, true);
+                return;
+            }
+            
+            const result = await makeRequest(`${AUTH_BASE}/login`, {
+                method: 'POST',
+                body: JSON.stringify({ username, password })
+            });
+            
+            if (result.success) {
+                authToken = result.token;
+                localStorage.setItem('authToken', authToken);
+                updateAuthStatus();
+                getAllCustomers(); // Recarregar dados completos
+            } else {
+                displayResponse('authStatus', result, true);
+            }
+        }
+
+        function logout() {
+            authToken = null;
+            localStorage.removeItem('authToken');
+            updateAuthStatus();
+            getAllCustomers(); // Recarregar apenas dados básicos
         }
 
         async function getAllCustomers() {
@@ -177,11 +242,13 @@
                 ['newName', 'newEmail', 'newPhone', 'newStreet', 'newCity', 'newState', 'newZipCode'].forEach(id => {
                     document.getElementById(id).value = '';
                 });
+                getAllCustomers(); // Recarregar lista
             }
         }
 
-        // Carregar clientes ao abrir a página
+        // Carregar clientes e status de auth ao abrir a página
         window.onload = function() {
+            updateAuthStatus();
             getAllCustomers();
         };
     </script>
