@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API de Clientes - Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+        
+        .api-config {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            border-left: 4px solid #007bff;
+        }
+        
+        .section {
+            background: #fff;
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            border: 1px solid #e9ecef;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        
+        .section:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+        
+        .section h3 {
+            color: #495057;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .icon {
+            font-size: 1.2em;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #555;
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+        
+        input:focus, select:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 3px rgba(0,123,255,0.1);
+        }
+        
+        button {
+            background: linear-gradient(135deg, #007bff, #0056b3);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            margin: 5px;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 5px 15px rgba(0,123,255,0.3);
+        }
+        
+        button.danger {
+            background: linear-gradient(135deg, #dc3545, #c82333);
+        }
+        
+        button.success {
+            background: linear-gradient(135deg, #28a745, #1e7e34);
+        }
+        
+        .response {
+            background: #f8f9fa;
+            border: 2px solid #dee2e6;
+            padding: 15px;
+            border-radius: 8px;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 15px;
+        }
+        
+        .response.error {
+            background: #f8d7da;
+            color: #721c24;
+            border-color: #f5c6cb;
+        }
+        
+        .response.success {
+            background: #d4edda;
+            color: #155724;
+            border-color: #c3e6cb;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .status-indicator.online {
+            background: #28a745;
+            animation: pulse 2s infinite;
+        }
+        
+        .status-indicator.offline {
+            background: #dc3545;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        
+        .token-display {
+            background: #e9ecef;
+            padding: 10px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 10px;
+            word-break: break-all;
+            margin-top: 10px;
+        }
+        
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .stat {
+            padding: 15px;
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            border-radius: 8px;
+            min-width: 120px;
+        }
+        
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #007bff;
+        }
+        
+        .stat-label {
+            color: #666;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🛡️ API de Clientes</h1>
+        <p class="subtitle">Sistema de Gerenciamento com Autenticação JWT</p>
+        
+        <div class="api-config">
+            <h3>⚙️ Configuração da API</h3>
+            <div class="form-group">
+                <label for="apiUrl">URL da API:</label>
+                <input type="text" id="apiUrl" value="http://localhost:3000" placeholder="http://localhost:3000">
+                <button onclick="testConnection()">🔍 Testar Conexão</button>
+                <div id="connectionStatus">
+                    <span class="status-indicator offline"></span>
+                    Desconectado
+                </div>
+            </div>
+        </div>
+        
+        <div class="stats">
+            <div class="stat">
+                <div class="stat-number" id="totalRequests">0</div>
+                <div class="stat-label">Requisições</div>
+            </div>
+            <div class="stat">
+                <div class="stat-number" id="totalCustomers">-</div>
+                <div class="stat-label">Clientes</div>
+            </div>
+            <div class="stat">
+                <div class="stat-number" id="authStatus">❌</div>
+                <div class="stat-label">Autenticado</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid">
+        <div class="section">
+            <h3><span class="icon">🔐</span>Autenticação</h3>
+            <div class="form-group">
+                <label for="loginUsername">Username:</label>
+                <input type="text" id="loginUsername" value="admin" placeholder="admin">
+            </div>
+            <div class="form-group">
+                <label for="loginPassword">Password:</label>
+                <input type="password" id="loginPassword" value="123456" placeholder="123456">
+            </div>
+            <button onclick="login()">🔑 Login</button>
+            <button onclick="logout()" class="danger">🚪 Logout</button>
+            <button onclick="getTestTokens()">🧪 Tokens de Teste</button>
+            <div id="authResponse" class="response"></div>
+            <div id="tokenDisplay" class="token-display" style="display: none;"></div>
+        </div>
+
+        <div class="section">
+            <h3><span class="icon">📋</span>Listar Clientes</h3>
+            <button onclick="getAllCustomers()">📊 Buscar Todos</button>
+            <div id="allCustomers" class="response"></div>
+        </div>
+
+        <div class="section">
+            <h3><span class="icon">🔍</span>Buscar por ID</h3>
+            <div class="form-group">
+                <input type="text" id="customerId" placeholder="ID do cliente">
+            </div>
+            <button onclick="getCustomerById()">🎯 Buscar</button>
+            <div id="customerById" class="response"></div>
+        </div>
+
+        <div class="section">
+            <h3><span class="icon">🔎</span>Buscar por Termo</h3>
+            <div class="form-group">
+                <input type="text" id="searchTerm" placeholder="Nome, email ou telefone">
+            </div>
+            <button onclick="searchCustomers()">🔍 Pesquisar</button>
+            <div id="searchResults" class="response"></div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="section">
+            <h3><span class="icon">➕</span>Criar Novo Cliente</h3>
+            <div class="grid">
+                <div>
+                    <div class="form-group">
+                        <label for="newName">Nome:</label>
+                        <input type="text" id="newName" placeholder="João Silva">
+                    </div>
+                    <div class="form-group">
+                        <label for="newEmail">Email:</label>
+                        <input type="email" id="newEmail" placeholder="joao@email.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="newPhone">Telefone:</label>
+                        <input type="text" id="newPhone" placeholder="+55 11 99999-1234">
+                    </div>
+                </div>
+                <div>
+                    <div class="form-group">
+                        <label for="newStreet">Endereço:</label>
+                        <input type="text" id="newStreet" placeholder="Rua das Flores, 123">
+                    </div>
+                    <div class="form-group">
+                        <label for="newCity">Cidade:</label>
+                        <input type="text" id="newCity" placeholder="São Paulo">
+                    </div>
+                    <div class="form-group">
+                        <label for="newState">Estado:</label>
+                        <input type="text" id="newState" placeholder="SP">
+                    </div>
+                    <div class="form-group">
+                        <label for="newZipCode">CEP:</label>
+                        <input type="text" id="newZipCode" placeholder="01234-567">
+                    </div>
+                    <div class="form-group">
+                        <label for="newCountry">País:</label>
+                        <input type="text" id="newCountry" value="Brasil" placeholder="Brasil">
+                    </div>
+                </div>
+            </div>
+            <button onclick="createCustomer()" class="success">✨ Criar Cliente</button>
+            <div id="createResult" class="response"></div>
+        </div>
+    </div>
+
+    <script>
+        let authToken = localStorage.getItem('authToken');
+        let apiUrl = localStorage.getItem('apiUrl') || 'http://localhost:3000';
+        let requestCount = 0;
+
+        // Carregar configurações salvas
+        document.getElementById('apiUrl').value = apiUrl;
+
+        // Atualizar status de autenticação
+        function updateAuthStatus() {
+            const authStatusElement = document.getElementById('authStatus');
+            const tokenDiv = document.getElementById('tokenDisplay');
+            
+            if (authToken) {
+                authStatusElement.textContent = '✅';
+                tokenDiv.style.display = 'block';
+                tokenDiv.textContent = `Token: ${authToken.substring(0, 50)}...`;
+            } else {
+                authStatusElement.textContent = '❌';
+                tokenDiv.style.display = 'none';
+            }
+        }
+
+        function updateRequestCount() {
+            requestCount++;
+            document.getElementById('totalRequests').textContent = requestCount;
+        }
+
+        async function testConnection() {
+            apiUrl = document.getElementById('apiUrl').value;
+            localStorage.setItem('apiUrl', apiUrl);
+            
+            try {
+                console.log('Testando conexão com:', apiUrl);
+                const response = await fetch(`${apiUrl}/health`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                
+                const statusElement = document.getElementById('connectionStatus');
+                statusElement.innerHTML = '<span class="status-indicator online"></span>Conectado ✅';
+                
+                displayResponse('authResponse', { 
+                    success: true, 
+                    message: 'Conexão estabelecida', 
+                    data 
+                }, false);
+            } catch (error) {
+                console.error('Erro de conexão:', error);
+                const statusElement = document.getElementById('connectionStatus');
+                statusElement.innerHTML = '<span class="status-indicator offline"></span>Desconectado ❌';
+                
+                displayResponse('authResponse', { 
+                    success: false, 
+                    error: `Erro de conexão: ${error.message}`,
+                    details: 'Verifique se a API está rodando e a URL está correta'
+                }, true);
+            }
+        }
+
+        async function makeRequest(endpoint, options = {}) {
+            updateRequestCount();
+            
+            try {
+                console.log('Fazendo requisição para:', `${apiUrl}${endpoint}`);
+                
+                const headers = {
+                    'Content-Type': 'application/json',
+                    ...options.headers
+                };
+                
+                if (authToken) {
+                    headers['Authorization'] = `Bearer ${authToken}`;
+                }
+                
+                const response = await fetch(`${apiUrl}${endpoint}`, {
+                    headers,
+                    mode: 'cors', // Explicitamente usar CORS
+                    ...options
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                console.log('Resposta recebida:', data);
+                return data;
+            } catch (error) {
+                console.error('Erro na requisição:', error);
+                return { 
+                    success: false, 
+                    error: error.message,
+                    details: 'Verifique se a API está rodando e acessível'
+                };
+            }
+        }
+
+        function displayResponse(elementId, data, isError = false) {
+            const element = document.getElementById(elementId);
+            element.textContent = JSON.stringify(data, null, 2);
+            element.className = `response ${isError ? 'error' : 'success'}`;
+        }
+
+        async function login() {
+            const username = document.getElementById('loginUsername').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            if (!username || !password) {
+                displayResponse('authResponse', { error: 'Username e password são obrigatórios' }, true);
+                return;
+            }
+            
+            const result = await makeRequest('/api/auth/login', {
+                method: 'POST',
+                body: JSON.stringify({ username, password })
+            });
+            
+            if (result.success) {
+                authToken = result.token;
+                localStorage.setItem('authToken', authToken);
+                updateAuthStatus();
+                getAllCustomers();
+            }
+            
+            displayResponse('authResponse', result, !result.success);
+        }
+
+        function logout() {
+            authToken = null;
+            localStorage.removeItem('authToken');
+            updateAuthStatus();
+            displayResponse('authResponse', { message: 'Logout realizado' }, false);
+        }
+
+        async function getTestTokens() {
+            const result = await makeRequest('/api/auth/test-tokens');
+            displayResponse('authResponse', result, !result.success);
+        }
+
+        async function getAllCustomers() {
+            const result = await makeRequest('/api/customers');
+            displayResponse('allCustomers', result, !result.success);
+            
+            if (result.success && result.data) {
+                document.getElementById('totalCustomers').textContent = result.data.length;
+            }
+        }
+
+        async function getCustomerById() {
+            const id = document.getElementById('customerId').value;
+            if (!id) {
+                displayResponse('customerById', { error: 'ID é obrigatório' }, true);
+                return;
+            }
+            const result = await makeRequest(`/api/customers/${id}`);
+            displayResponse('customerById', result, !result.success);
+        }
+
+        async function searchCustomers() {
+            const term = document.getElementById('searchTerm').value;
+            if (!term) {
+                displayResponse('searchResults', { error: 'Termo de busca é obrigatório' }, true);
+                return;
+            }
+            const result = await makeRequest(`/api/customers/search?q=${encodeURIComponent(term)}`);
+            displayResponse('searchResults', result, !result.success);
+        }
+
+        async function createCustomer() {
+            const customerData = {
+                name: document.getElementById('newName').value,
+                email: document.getElementById('newEmail').value,
+                phone: document.getElementById('newPhone').value,
+                address: {
+                    street: document.getElementById('newStreet').value,
+                    city: document.getElementById('newCity').value,
+                    state: document.getElementById('newState').value,
+                    zipCode: document.getElementById('newZipCode').value,
+                    country: document.getElementById('newCountry').value
+                }
+            };
+
+            if (!customerData.name || !customerData.email || !customerData.phone) {
+                displayResponse('createResult', { error: 'Nome, email e telefone são obrigatórios' }, true);
+                return;
+            }
+
+            const result = await makeRequest('/api/customers', {
+                method: 'POST',
+                body: JSON.stringify(customerData)
+            });
+            
+            displayResponse('createResult', result, !result.success);
+            
+            if (result.success) {
+                ['newName', 'newEmail', 'newPhone', 'newStreet', 'newCity', 'newState', 'newZipCode'].forEach(id => {
+                    document.getElementById(id).value = '';
+                });
+                getAllCustomers();
+            }
+        }
+
+        // Inicialização
+        window.onload = function() {
+            updateAuthStatus();
+            testConnection();
+        };
+    </script>
+</body>
+</html>
