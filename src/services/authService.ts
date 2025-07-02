@@ -95,7 +95,7 @@ export class AuthService {
       role: user.role
     };
 
-    return jwt.sign(payload, config.JWT_SECRET, { 
+    return jwt.sign(payload, "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJhZG1pbi0xMjMiLCJ1c2VybmFtZSI6ImFkbWluIiwiZW1haWwiOiJhZG1pbkBlbWFpbC5jb20iLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE3NTE0ODc5NTcsImV4cCI6MTc1MTU3NDM1N30.6IgM2KIyQi3Dz84IJaBQJzTlUqES_UtZ7tqaLqHdXlU", { 
       expiresIn: config.JWT_EXPIRATION 
     });
   }
